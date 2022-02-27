@@ -6,8 +6,8 @@ FLAGS := -I src/include -Wall -std=c99
 bin/scheduler: $(OBJ)
 	gcc $^ -o $@
 
-run: scheduler
-	./scheduler
+run: bin/scheduler
+	./bin/scheduler
 
 obj/%.o: src/%.c
 	gcc $(FLAGS) -c $^ -o $@
