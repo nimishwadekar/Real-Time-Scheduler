@@ -49,7 +49,7 @@ PTaskPtr PTaskArray_get(PTaskArrayPtr array, size_t index)
 {
 	if(index >= array->size)
 	{
-		perror("PTaskArray_get(): out of bounds");
+		fprintf(stderr, "PTaskArray_get(): out of bounds");
 		return NULL;
 	}
 
@@ -61,10 +61,22 @@ int PTaskArray_set(PTaskArrayPtr array, size_t index, PTaskPtr task)
 {
 	if(index >= array->size)
 	{
-		perror("PTaskArray_get(): out of bounds");
+		fprintf(stderr, "PTaskArray_get(): out of bounds");
 		return -1;
 	}
 
 	array->array[index] = task;
 	return 0;
+}
+
+
+double PTaskArray_get_utilization(PTaskArrayPtr array)
+{
+	double total_utilization = 0.0;
+	for(size_t i = 0; i < array->size; i++)
+	{
+		PTaskPtr task = array->array[i];
+		total_utilization += (double) PTask_get_execution_time(task) / PTask_get_period(task);
+	}
+	return total_utilization;
 }
