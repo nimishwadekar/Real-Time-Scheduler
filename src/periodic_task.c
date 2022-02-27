@@ -58,3 +58,15 @@ unsigned PTask_get_relative_deadline(PTaskPtr task)
 {
 	return task->relative_deadline;
 }
+
+
+unsigned PTask_get_release_time(PTaskPtr task, unsigned job_number)
+{
+	return task->period * job_number + task->phase;
+}
+
+
+unsigned PTask_get_absolute_deadline(PTaskPtr task, unsigned job_number)
+{
+	return task->period * job_number + task->phase + task->relative_deadline;
+}

@@ -1,4 +1,5 @@
 #include "ptask.h"
+#include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -79,4 +80,16 @@ double PTaskArray_get_utilization(PTaskArrayPtr array)
 		total_utilization += (double) PTask_get_execution_time(task) / PTask_get_period(task);
 	}
 	return total_utilization;
+}
+
+
+unsigned PTaskArray_get_hyper_period(PTaskArrayPtr array)
+{
+	unsigned hyper_period = PTask_get_period(array->array[0]);
+	for(size_t i = 1; i < array->size; i++)
+	{
+		unsigned period = PTask_get_period(array->array[i]);
+		hyper_period = period / gcd(hyper_period, period) * hyper_period;
+	}
+	return hyper_period;
 }

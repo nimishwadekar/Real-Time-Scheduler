@@ -25,6 +25,10 @@ unsigned PTask_get_period(PTaskPtr task);
 unsigned PTask_get_execution_time(PTaskPtr task);
 unsigned PTask_get_relative_deadline(PTaskPtr task);
 
+// job_number starts from 0.
+unsigned PTask_get_release_time(PTaskPtr task, unsigned job_number);
+unsigned PTask_get_absolute_deadline(PTaskPtr task, unsigned job_number);
+
 
 
 /********************************************************
@@ -63,6 +67,10 @@ int PTaskArray_set(PTaskArrayPtr array, size_t index, PTaskPtr task);
 
 
 double PTaskArray_get_utilization(PTaskArrayPtr array);
+
+
+// Assumes at least 1 periodic task.
+unsigned PTaskArray_get_hyper_period(PTaskArrayPtr array);
 
 
 #endif /* TASK_H */

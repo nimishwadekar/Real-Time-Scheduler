@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-	printf("*****************************************************\n\n");
+	printf("\n");
 
 	// Check args and use file names.
 
@@ -18,8 +18,19 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	printf("%g\n", PTaskArray_get_utilization(array));	
+	double utilization = PTaskArray_get_utilization(array);
+	if(utilization > 1.0)
+	{
+		printf("Total utilization greater than 1\nNo schedule possible\n");
+		return 1;
+	}
 
-	printf("\n*****************************************************\n");
+	if(utilization > 0.0)
+	{
+		unsigned hyper_period = PTaskArray_get_hyper_period(array);
+
+		// get frame size and periodic schedule using INF.
+	}
+
 	return 0;
 }
