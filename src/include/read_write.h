@@ -1,5 +1,5 @@
-#ifndef READ_H
-#define READ_H 1
+#ifndef READ_WRITE_H
+#define READ_WRITE_H 1
 
 #include "ptask.h"
 
@@ -10,4 +10,8 @@
 // Returns 0 on success and -1 on failure.
 int read_periodic_tasks(const char *file_name, PTaskArrayPtr *array);
 
-#endif /* READ_H */
+// first line - frame size <space> frame count.
+// Then frame list. Entry = list of jobs then remaining time in frame
+int write_periodic_schedule(const char *file_name, int frame_size, int frame_count, size_t total_jobs, struct FramePJobEntry entries[frame_count][total_jobs]);
+
+#endif /* READ_WRITE_H */

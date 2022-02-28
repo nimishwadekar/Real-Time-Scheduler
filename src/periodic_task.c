@@ -4,15 +4,15 @@
 
 struct PTask
 {
-	unsigned phase;
-	unsigned period;
-	unsigned execution_time;
-	unsigned relative_deadline;
+	int phase;
+	int period;
+	double execution_time;
+	int relative_deadline;
 };
 
 
-PTaskPtr PTask_new(unsigned phase, unsigned period, 
-	unsigned execution_time, unsigned relative_deadline)
+PTaskPtr PTask_new(int phase, int period, 
+	double execution_time, int relative_deadline)
 {
 	PTaskPtr pTask = malloc(sizeof(struct PTask));
 	if(!pTask)
@@ -36,37 +36,37 @@ void PTask_delete(PTaskPtr task)
 }
 
 
-unsigned PTask_get_phase(PTaskPtr task)
+int PTask_get_phase(PTaskPtr task)
 {
 	return task->phase;
 }
 
 
-unsigned PTask_get_period(PTaskPtr task)
+int PTask_get_period(PTaskPtr task)
 {
 	return task->period;
 }
 
 
-unsigned PTask_get_execution_time(PTaskPtr task)
+double PTask_get_execution_time(PTaskPtr task)
 {
 	return task->execution_time;
 }
 
 
-unsigned PTask_get_relative_deadline(PTaskPtr task)
+int PTask_get_relative_deadline(PTaskPtr task)
 {
 	return task->relative_deadline;
 }
 
 
-unsigned PTask_get_release_time(PTaskPtr task, unsigned job_number)
+int PTask_get_release_time(PTaskPtr task, int job_number)
 {
 	return task->period * job_number + task->phase;
 }
 
 
-unsigned PTask_get_absolute_deadline(PTaskPtr task, unsigned job_number)
+int PTask_get_absolute_deadline(PTaskPtr task, int job_number)
 {
 	return task->period * job_number + task->phase + task->relative_deadline;
 }

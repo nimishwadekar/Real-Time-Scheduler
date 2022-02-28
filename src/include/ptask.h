@@ -13,34 +13,30 @@ typedef struct PTask *PTaskPtr;
 
 
 // Allocates and returns a pointer to a PTask on the heap.
-PTaskPtr PTask_new(unsigned phase, unsigned period, 
-	unsigned execution_time, unsigned relative_deadline);
+PTaskPtr PTask_new(int phase, int period, 
+	double execution_time, int relative_deadline);
 
 
 // Frees a heap-allocated PTask.
 void PTask_delete(PTaskPtr task);
 
-unsigned PTask_get_phase(PTaskPtr task);
-unsigned PTask_get_period(PTaskPtr task);
-unsigned PTask_get_execution_time(PTaskPtr task);
-unsigned PTask_get_relative_deadline(PTaskPtr task);
+int PTask_get_phase(PTaskPtr task);
+int PTask_get_period(PTaskPtr task);
+double PTask_get_execution_time(PTaskPtr task);
+int PTask_get_relative_deadline(PTaskPtr task);
 
 // job_number starts from 0.
-unsigned PTask_get_release_time(PTaskPtr task, unsigned job_number);
-unsigned PTask_get_absolute_deadline(PTaskPtr task, unsigned job_number);
+int PTask_get_release_time(PTaskPtr task, int job_number);
+int PTask_get_absolute_deadline(PTaskPtr task, int job_number);
 
 
-
-/********************************************************
- * 					PERIODIC JOB  						*
- ********************************************************/
-
-// Type that represents a periodic job.
-typedef struct PJob *PJobPtr;
-
-
-// Allocates and returns 
-
+struct FramePJobEntry
+{
+    int valid; // is entry valid?
+    int task;
+    int job;
+    double exec_time; // in current frame.
+};
 
 
 /********************************************************
@@ -70,7 +66,15 @@ double PTaskArray_get_utilization(PTaskArrayPtr array);
 
 
 // Assumes at least 1 periodic task.
-unsigned PTaskArray_get_hyper_period(PTaskArrayPtr array);
+int PTaskArray_get_hyper_period(PTaskArrayPtr array);
+
+
+// Returns decreasing order of possible frames one at a time. Returns 0 on no more possible frames.
+// Assumes at least 1 periodic task.
+int PTaskArray_get_next_possible_frame_size(PTaskArrayPtr array);
+
+
+size_t PTaskArray_get_jobs_per_hyper_period(PTaskArrayPtr array, size_t job_counts[]);
 
 
 #endif /* TASK_H */
