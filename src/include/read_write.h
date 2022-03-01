@@ -11,7 +11,8 @@
 int read_periodic_tasks(const char *file_name, PTaskArrayPtr *array);
 
 // first line - frame size <space> frame count.
-// Then frame list. Entry = list of jobs then remaining time in frame
+// Then frame list. Entry = job count <space> list of jobs.
+// Job = task number <comma> job instance number <comma> execution time in frame
 int write_periodic_schedule(const char *file_name, int frame_size, int frame_count, size_t total_jobs, struct FramePJobEntry entries[frame_count][total_jobs]);
 
 #endif /* READ_WRITE_H */

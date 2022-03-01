@@ -50,7 +50,16 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 	fprintf(file, "%d %d\n", frame_size, frame_count);
 	for(int i = 0; i < frame_count; i++)
 	{
-		double remaining_time = frame_size;
+		int job_count = 0;
+		for(int j = 0; j < total_jobs; j++)
+		{
+			if(entries[i][j].valid)
+			{
+				job_count++;
+			}
+		}
+		fprintf(file, "%d ", job_count);
+
 		for(int j = 0; j < total_jobs; j++)
 		{
 			struct FramePJobEntry *entry = &entries[i][j];
@@ -60,9 +69,8 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 			}
 
 			fprintf(file, "%d,%d,%g ", entry->task, entry->job, entry->exec_time);
-			remaining_time -= entry->exec_time;
 		}
-		fprintf(file, "%g\n", remaining_time);
+		fprintf(file, "\n");
 	}
 	return 0;
 }
