@@ -22,7 +22,7 @@ void Scheduler_delete(SchedulerPtr scheduler);
 int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_name);
 
 int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_name);
-
+int Scheduler_load_aperiodic_schedule(SchedulerPtr scheduler, const char *file_name);
 
 void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule);
 
@@ -33,8 +33,8 @@ void Schedule_delete(SchedulePtr schedule);
 
 size_t Schedule_size(SchedulePtr schedule);
 void Schedule_set_frame_size(SchedulePtr schedule, size_t frame_size);
-void Schedule_add_entry(SchedulePtr schedule, double slice_start_time, enum JobType job_type, int job, int task_if_periodic);
-void Schedule_get_entry(SchedulePtr schedule, size_t index, double *slice_start_time, enum JobType *job_type, int *job, int *task_if_periodic);
+void Schedule_add_entry(SchedulePtr schedule, double slice_time, enum JobType job_type, int job, int task_if_periodic);
+void Schedule_get_entry(SchedulePtr schedule, size_t index, double *slice_time, enum JobType *job_type, int *job, int *task_if_periodic);
 
 void Schedule_fprint(SchedulePtr schedule, FILE *stream);
 

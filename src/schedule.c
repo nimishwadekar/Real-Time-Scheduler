@@ -82,9 +82,9 @@ void Schedule_set_frame_size(SchedulePtr schedule, size_t frame_size)
 }
 
 
-void Schedule_add_entry(SchedulePtr schedule, double slice_start_time, enum JobType job_type, int job, int task_if_periodic)
+void Schedule_add_entry(SchedulePtr schedule, double slice_time, enum JobType job_type, int job, int task_if_periodic)
 {
-	VectorDouble_append(schedule->slice_times, slice_start_time);
+	VectorDouble_append(schedule->slice_times, slice_time);
 	VectorInt_append(schedule->job_types, job_type);
 	VectorInt_append(schedule->jobs, job);
 	if(job_type == JOB_TYPE_PERIODIC)
@@ -100,9 +100,9 @@ void Schedule_add_entry(SchedulePtr schedule, double slice_start_time, enum JobT
 }
 
 
-void Schedule_get_entry(SchedulePtr schedule, size_t index, double *slice_start_time, enum JobType *job_type, int *job, int *task_if_periodic)
+void Schedule_get_entry(SchedulePtr schedule, size_t index, double *slice_time, enum JobType *job_type, int *job, int *task_if_periodic)
 {
-	*slice_start_time = VectorDouble_get(schedule->slice_times, index);
+	*slice_time = VectorDouble_get(schedule->slice_times, index);
 	*job_type = VectorInt_get(schedule->job_types, index);
 	*job = VectorInt_get(schedule->jobs, index);
 	if(*job_type == JOB_TYPE_PERIODIC)

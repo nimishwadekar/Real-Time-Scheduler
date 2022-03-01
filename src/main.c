@@ -26,6 +26,13 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	if(Scheduler_load_aperiodic_schedule(scheduler, "aperiodicJobs.txt") != 0)
+	{
+		fprintf(stderr, "Load periodic table failed\n");
+		Scheduler_delete(scheduler);
+		return -1;
+	}
+
 	SchedulePtr schedule = Schedule_new();
 	Scheduler_cyclic_executive(scheduler, schedule);
 
