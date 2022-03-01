@@ -32,6 +32,7 @@ int read_periodic_tasks(const char *file_name, PTaskArrayPtr *array)
 
 		PTaskArray_set(array_ptr, i, task);
 	}
+	fclose(file);
 
 	*array = array_ptr;
 	return 0;
@@ -72,5 +73,6 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 		}
 		fprintf(file, "\n");
 	}
+	fclose(file);
 	return 0;
 }

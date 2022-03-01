@@ -1,4 +1,4 @@
-#include "psched.h"
+#include "scheduler.h"
 #include "inf.h"
 #include "ptask.h"
 #include "read_write.h"
@@ -39,12 +39,15 @@ int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_n
 			if(write_periodic_schedule(sched_file_name, frame_size, hyper_period / frame_size, total_jobs, entries) != 0)
 			{
 				fprintf(stderr, "write_periodic_schedule() failed\n");
+				PTaskArray_delete(array);
 				return -1;
 			}
+			PTaskArray_delete(array);
 			return 0;
 		}
 	}
 
 	printf("INF algorithm could not find a periodic schedule for any frame size\n");
+	PTaskArray_delete(array);
 	return 1;
 }
