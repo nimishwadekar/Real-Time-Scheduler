@@ -10,7 +10,7 @@ struct Scheduler
 	// Each time step moves forward time by one frame.
 	unsigned long time;
 	unsigned long current_frame;
-	double current_slack;
+	double frame_progress, slack_left;
 
 	// Periodic jobs
 
@@ -99,22 +99,26 @@ int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_na
 
 
 
-void Scheduler_cyclic_executive(SchedulerPtr scheduler)
+void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 {
 	scheduler->time = 0;
 	scheduler->current_frame = 0;
-	scheduler->current_slack = scheduler->slacks[0];
+	scheduler->frame_progress = 0;
+	scheduler->slack_left = scheduler->slacks[0];
 
-	while(1)
+	Schedule_set_frame_size(schedule, scheduler->frame_size);
+
+	int n = 10;
+	while(n--)
 	{
 		// Assume each iteration is a timer interrupt.
-		// Assume no frame overruns and all slices are released immediately at frame start.
+		// Assume no frame overruns and no jitter.
 
 		// TODO: Run acceptance tests on sporadic job queue to accept them.
 
 
 		PSliceArrayPtr pslices = scheduler->pslice_arrays[scheduler->current_frame];
-		size_t slice_index = 0, slice_count = PSliceArray_size(pslices);
+		size_t pslice_index = 0, pslice_count = PSliceArray_size(pslices);
 
 		while(1)
 		{
@@ -125,16 +129,37 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler)
 
 
 			// TODO: If no periodic job slices, break.
+			if(pslice_index == pslice_count)
+			{
+				break;
+			}
 
 
 			// TODO: Execute 1 periodic job slice.
-			
-
+			PSlicePtr pslice = PSliceArray_get(pslices, pslice_index);
+			//printf("%d %d %g\n", PSlice_task(pslice), PSlice_job(pslice), PSlice_slice_time(pslice));
+			Schedule_add_entry(schedule, PSlice_slice_time(pslice), JOB_TYPE_PERIODIC, PSlice_job(pslice), PSlice_task(pslice));
+			scheduler->frame_progress += PSlice_slice_time(pslice);
+			pslice_index++;
 		}
 
 		// TODO: If accepted sporadic jobs, execute until queue empty or no slack.
 
 
+		// TODO: If no more jobs to do and slack left, idle.
+		if(scheduler->frame_progress < scheduler->frame_size)
+		{
+			Schedule_add_entry(schedule, scheduler->frame_size - scheduler->frame_progress, 
+				JOB_TYPE_IDLE, 0, 0);
+		}
+
+
 		// TODO: Update scheduler state.
+		scheduler->time++;
+		scheduler->current_frame = scheduler->time % scheduler->frame_count;
+		scheduler->frame_progress = 0;
+		scheduler->slack_left = scheduler->slacks[scheduler->current_frame];
+
+		//printf("\n");
 	}
 }

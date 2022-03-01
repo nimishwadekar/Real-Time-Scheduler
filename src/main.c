@@ -3,6 +3,8 @@
 #include "read_write.h"
 #include "scheduler.h"
 
+#include "vector.h"
+
 int main(int argc, char *argv[])
 {
 	printf("\n");
@@ -24,9 +26,13 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	Scheduler_cyclic_executive(scheduler);
+	SchedulePtr schedule = Schedule_new();
+	Scheduler_cyclic_executive(scheduler, schedule);
+
+	Schedule_fprint(schedule, stdout);
 
 	Scheduler_delete(scheduler);
+	Schedule_delete(schedule);
 
 	return 0;
 }
