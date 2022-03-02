@@ -156,3 +156,99 @@ void VectorDouble_append(VectorDoublePtr vector, double element)
 	vector->capacity *= 2;
 	VectorDouble_append(vector, element);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct VectorSJob
+{
+	SJobPtr *array;
+	size_t count, capacity;
+};
+
+VectorSJobPtr VectorSJob_new(void)
+{
+	VectorSJobPtr vec = malloc(sizeof(struct VectorSJob));
+	if(!vec)
+	{
+		return NULL;
+	}
+
+	vec->array = malloc(8 * sizeof(SJobPtr));
+	if(!vec->array)
+	{
+		free(vec);
+		return NULL;
+	}
+	vec->count = 0;
+	vec->capacity = 8;
+	return vec;
+}
+
+void VectorSJob_delete(VectorSJobPtr vector)
+{
+	free(vector->array);
+	free(vector);
+}
+
+size_t VectorSJob_size(VectorSJobPtr vector)
+{
+	return vector->count;
+}
+
+SJobPtr VectorSJob_get(VectorSJobPtr vector, size_t index)
+{
+	if(index < 0 || index >= vector->count)
+	{
+		fprintf(stderr, "VectorSJob_get(): out of bounds\n");
+		return NULL;
+	}
+	return vector->array[index];
+}
+
+void VectorSJob_set(VectorSJobPtr vector, size_t index, SJobPtr element)
+{
+	if(index < 0 || index >= vector->count)
+	{
+		fprintf(stderr, "VectorSJob_get(): out of bounds\n");
+		return;
+	}
+	vector->array[index] = element;
+}
+
+void VectorSJob_append(VectorSJobPtr vector, SJobPtr element)
+{
+	if(vector->count < vector->capacity)
+	{
+		vector->array[vector->count] = element;
+		vector->count++;
+		return;
+	}
+
+	vector->array = realloc(vector->array, vector->capacity * 2 * sizeof(SJobPtr));
+	vector->capacity *= 2;
+	VectorSJob_append(vector, element);
+}
+
+SJobPtr VectorSJob_remove_last(VectorSJobPtr vector)
+{
+	if(vector->count == 0)
+	{
+		return NULL;
+	}
+
+	vector->count -= 1;
+	return vector->array[vector->count];
+}

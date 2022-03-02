@@ -23,6 +23,7 @@ int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_n
 
 int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_name);
 int Scheduler_load_aperiodic_schedule(SchedulerPtr scheduler, const char *file_name);
+int Scheduler_load_sporadic_schedule(SchedulerPtr scheduler, const char *file_name);
 
 void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule);
 

@@ -2,7 +2,7 @@
 #include "vector.h"
 #include <stdlib.h>
 
-struct AJob
+struct AJobQueue
 {
 	size_t size, front;
 	VectorDoublePtr release_times;
@@ -12,7 +12,7 @@ struct AJob
 
 AJobQueuePtr AJobQueue_new(void)
 {
-	AJobQueuePtr queue = malloc(sizeof(struct AJob));
+	AJobQueuePtr queue = malloc(sizeof(struct AJobQueue));
 	if(!queue)
 	{
 		return NULL;

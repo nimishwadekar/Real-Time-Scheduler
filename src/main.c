@@ -3,7 +3,8 @@
 #include "read_write.h"
 #include "scheduler.h"
 
-#include "vector.h"
+#include "sjob.h"
+#include "sjob_queue.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,14 +29,20 @@ int main(int argc, char *argv[])
 
 	if(Scheduler_load_aperiodic_schedule(scheduler, "aperiodicJobs.txt") != 0)
 	{
-		fprintf(stderr, "Load periodic table failed\n");
+		fprintf(stderr, "Load aperiodic jobs failed\n");
+		Scheduler_delete(scheduler);
+		return -1;
+	}
+
+	if(Scheduler_load_sporadic_schedule(scheduler, "sporadicJobs.txt") != 0)
+	{
+		fprintf(stderr, "Load sporadic jobs failed\n");
 		Scheduler_delete(scheduler);
 		return -1;
 	}
 
 	SchedulePtr schedule = Schedule_new();
 	Scheduler_cyclic_executive(scheduler, schedule);
-
 	Schedule_fprint(schedule, stdout);
 
 	Scheduler_delete(scheduler);

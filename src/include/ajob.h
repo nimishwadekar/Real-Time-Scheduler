@@ -1,7 +1,7 @@
 #ifndef AJOB_H
 #define AJOB_H 1
 
-typedef struct AJob *AJobQueuePtr;
+typedef struct AJobQueue *AJobQueuePtr;
 
 AJobQueuePtr AJobQueue_new(void);
 void AJobQueue_delete(AJobQueuePtr queue);
