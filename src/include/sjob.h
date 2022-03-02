@@ -1,6 +1,7 @@
 #ifndef SJOB_H
 #define SJOB_H 1
 
+// A sporadic job.
 typedef struct SJob *SJobPtr;
 
 SJobPtr SJob_new(int job_no, double arrival, double exec_time, double abs_deadline);

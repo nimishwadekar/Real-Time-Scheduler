@@ -6,7 +6,7 @@ struct PSlice
 {
 	int task;
 	int job;
-	double slice_time; // execution time in current frame.
+	double slice_time;
 };
 
 PSlicePtr PSlice_new(int task, int job, double slice_time)

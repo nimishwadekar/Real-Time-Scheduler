@@ -1,7 +1,7 @@
 SRC := $(wildcard src/*.c)
 OBJ := $(patsubst src/%.c, obj/%.o, $(SRC))
 
-FLAGS := -I src/include -Wall -std=c99
+FLAGS := -I src/include -Wall -Wextra -std=c99
 
 bin/scheduler: $(OBJ)
 	gcc $^ -o $@

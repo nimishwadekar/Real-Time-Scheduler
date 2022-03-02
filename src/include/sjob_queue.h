@@ -3,6 +3,7 @@
 
 #include "sjob.h"
 
+// Dyanimcally-sized FIFO queue of sporadic jobs.
 typedef struct SJobQueue *SJobQueuePtr;
 
 SJobQueuePtr SJobQueue_new(void);
@@ -15,6 +16,7 @@ int SJobQueue_is_empty(SJobQueuePtr queue);
 
 
 
+// Dynamically-sized priority queue of sporadic jobs.
 // Earlier deadline = higher priority.
 typedef struct SJobPriQueue *SJobPriQueuePtr;
 
@@ -26,7 +28,8 @@ void SJobPriQueue_dequeue(SJobPriQueuePtr queue);
 SJobPtr SJobPriQueue_peek(SJobPriQueuePtr queue);
 int SJobPriQueue_is_empty(SJobPriQueuePtr queue);
 
-// 1 - done, 0 - no
+// Tries to enqueue the job after considering all existing jobs in the queue.
+// Returns 1 on success, 0 on failure.
 int SJobPriQueue_try_enqueue(SJobPriQueuePtr queue, SJobPtr job, double total_slack);
 
 

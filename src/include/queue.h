@@ -3,9 +3,9 @@
 
 #include <stddef.h>
 
+// A fixed-size queue of ints.
 typedef struct QueueInt *QueueIntPtr;
 
-// Fixed size queue because only used in graph. Vertices visited only once.
 QueueIntPtr QueueInt_new(size_t size);
 
 void QueueInt_delete(QueueIntPtr queue);

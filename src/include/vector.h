@@ -4,6 +4,11 @@
 #include "sjob.h"
 #include <stddef.h>
 
+// Various vector implementations for different types.
+
+//
+
+
 typedef struct VectorInt *VectorIntPtr;
 
 VectorIntPtr VectorInt_new(void);

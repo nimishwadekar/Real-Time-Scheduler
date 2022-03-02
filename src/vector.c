@@ -40,7 +40,7 @@ size_t VectorInt_size(VectorIntPtr vector)
 
 int VectorInt_get(VectorIntPtr vector, size_t index)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorInt_get(): out of bounds\n");
 		return -1;
@@ -50,7 +50,7 @@ int VectorInt_get(VectorIntPtr vector, size_t index)
 
 void VectorInt_set(VectorIntPtr vector, size_t index, int element)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorInt_get(): out of bounds\n");
 		return;
@@ -125,7 +125,7 @@ size_t VectorDouble_size(VectorDoublePtr vector)
 
 double VectorDouble_get(VectorDoublePtr vector, size_t index)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorDouble_get(): out of bounds\n");
 		return -1;
@@ -135,7 +135,7 @@ double VectorDouble_get(VectorDoublePtr vector, size_t index)
 
 void VectorDouble_set(VectorDoublePtr vector, size_t index, double element)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorDouble_get(): out of bounds\n");
 		return;
@@ -210,7 +210,7 @@ size_t VectorSJob_size(VectorSJobPtr vector)
 
 SJobPtr VectorSJob_get(VectorSJobPtr vector, size_t index)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorSJob_get(): out of bounds\n");
 		return NULL;
@@ -220,7 +220,7 @@ SJobPtr VectorSJob_get(VectorSJobPtr vector, size_t index)
 
 void VectorSJob_set(VectorSJobPtr vector, size_t index, SJobPtr element)
 {
-	if(index < 0 || index >= vector->count)
+	if(index >= vector->count)
 	{
 		fprintf(stderr, "VectorSJob_get(): out of bounds\n");
 		return;

@@ -12,15 +12,16 @@ enum JobType
 	JOB_TYPE_IDLE
 };
 
-#define SCHEDULER_TIMESTEP_PRECISION 100
-#define SCHEDULER_MINIMUM_TIMESTEP (1.0 / SCHEDULER_TIMESTEP_PRECISION)
-
+// The scheduler.
 typedef struct Scheduler *SchedulerPtr;
+
+// Schedule produced by the scheduler.
 typedef struct Schedule *SchedulePtr;
 
 SchedulerPtr Scheduler_new(void);
 void Scheduler_delete(SchedulerPtr scheduler);
 
+// Reads list of tasks from file task_file_name, schedules all of them, and writes the result to file sched_file_name.
 // Non-zero return value = error.
 int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_name);
 
@@ -28,6 +29,7 @@ int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_na
 int Scheduler_load_aperiodic_schedule(SchedulerPtr scheduler, const char *file_name);
 int Scheduler_load_sporadic_schedule(SchedulerPtr scheduler, const char *file_name);
 
+// Executes the schedule as if at runtime.
 void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule);
 
 

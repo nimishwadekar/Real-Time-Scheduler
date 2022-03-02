@@ -6,37 +6,21 @@
 #include <float.h>
 #include <stdio.h>
 
+// Struct to store metadata about the INF flow graph.
 struct INFInfo
 {
-	size_t vertex_count;
-	size_t job_offset;
-	size_t ptask_count;
-	size_t total_job_count;
-	size_t *job_counts;
-	size_t frame_offset;
-	size_t frame_count;
-	size_t frame_size;
+	size_t vertex_count; // Number of vertices.
+	size_t job_offset; // Vertex number offset from which job vertices start.
+	size_t ptask_count; // Number of periodic tasks.
+	size_t total_job_count; // Total number of jobs.
+	size_t *job_counts; // Number of jobs of each task as an array.
+	size_t frame_offset; // Vertex number offset from which frame vertices start.
+	size_t frame_count; // Number of frames.
+	size_t frame_size; // Size of one frame.
 };
 
 
-static void print_graph(size_t vertex_count, double graph[vertex_count][vertex_count])
-{
-	printf("    ");
-	for(size_t i = 0; i < vertex_count; i++)
-		printf("%2lu ", i);
-	printf("\n\n");
-	for(size_t i = 0; i < vertex_count; i++)
-	{
-		printf("%2lu  ", i);
-		for(size_t j = 0; j < vertex_count; j++)
-		{
-			printf("%2g ", graph[i][j]);
-		}
-		printf("\n");
-	}
-}
-
-
+// Initialises the capacities of the edges of the passed flow graph.
 static void initialise_graph(size_t vertex_count, double graph[vertex_count][vertex_count], struct INFInfo *infInfo, PTaskArrayPtr array)
 {
 	memset(graph, 0, vertex_count * vertex_count * sizeof(double));
@@ -81,6 +65,7 @@ static void initialise_graph(size_t vertex_count, double graph[vertex_count][ver
 }
 
 
+// Performs the Edmonds-Karp algorithm on the passed adjacency matrix representation of a flow graph to find the maximum flow.
 static double edmonds_karp(size_t vertex_count, double capacity_graph[vertex_count][vertex_count], double flow_graph[vertex_count][vertex_count])
 {
 	double flow = 0;
@@ -95,7 +80,7 @@ static double edmonds_karp(size_t vertex_count, double capacity_graph[vertex_cou
 		QueueIntPtr queue = QueueInt_new(vertex_count);
 		if(!queue)
 		{
-			fprintf(stderr, "edmonds_karp(): queue creation failed\n");
+			fprintf(stderr, "edmonds_karp(): QueueInt_new() failed\n");
 			return -1;
 		}
 
@@ -141,11 +126,10 @@ static double edmonds_karp(size_t vertex_count, double capacity_graph[vertex_cou
 		}
 	}
 
-	//print_graph(vertex_count, flow_graph);
 	return flow;
 }
 
-int inf_algorithm(PTaskArrayPtr array, int frame_size, int frame_count, size_t total_jobs, struct FramePJobEntry entries[frame_count][total_jobs])
+int inf_algorithm(PTaskArrayPtr array, size_t frame_size, size_t frame_count, size_t total_jobs, struct FramePJobEntry entries[frame_count][total_jobs])
 {
 	size_t ptask_count = PTaskArray_get_size(array);
 	size_t job_counts[ptask_count];
@@ -186,13 +170,13 @@ int inf_algorithm(PTaskArrayPtr array, int frame_size, int frame_count, size_t t
 	double flow_graph[vertex_count][vertex_count];
 	memset(flow_graph, 0, sizeof(flow_graph));
 
+	// If max flow != total execution time, schedule was not found.
 	if(!DOUBLE_EQ(edmonds_karp(vertex_count, capacity_graph, flow_graph), total_execution_time))
 	{
 		return -1;
 	}
 
 	// Fill in entries array.
-
 	for(size_t f = 0; f < frame_count; f++)
 	{
 		size_t last_task_offset = 0;

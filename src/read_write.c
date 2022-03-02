@@ -44,7 +44,7 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 	FILE *file = fopen(file_name, "w");
 	if(!file)
 	{
-		perror("write_periodic_schedule(): open() failed");
+		perror("write_periodic_schedule(): fopen() failed");
 		return -1;
 	}
 
@@ -52,7 +52,7 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 	for(int i = 0; i < frame_count; i++)
 	{
 		int job_count = 0;
-		for(int j = 0; j < total_jobs; j++)
+		for(size_t j = 0; j < total_jobs; j++)
 		{
 			if(entries[i][j].valid)
 			{
@@ -61,7 +61,7 @@ int write_periodic_schedule(const char *file_name, int frame_size, int frame_cou
 		}
 		fprintf(file, "%d ", job_count);
 
-		for(int j = 0; j < total_jobs; j++)
+		for(size_t j = 0; j < total_jobs; j++)
 		{
 			struct FramePJobEntry *entry = &entries[i][j];
 			if(!entry->valid)

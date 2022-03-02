@@ -22,6 +22,12 @@ int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_n
 	}
 	if(utilization <= 0.0) // No periodic task executions to schedule
 	{
+		if(write_periodic_schedule(sched_file_name, 0, 0, 0, NULL) != 0)
+		{
+			fprintf(stderr, "schedule_periodic_tasks(): write_periodic_schedule() failed\n");
+			PTaskArray_delete(array);
+			return -1;
+		}
 		return 0;
 	}
 	
@@ -38,7 +44,7 @@ int schedule_periodic_tasks(const char *task_file_name, const char *sched_file_n
 		{
 			if(write_periodic_schedule(sched_file_name, frame_size, hyper_period / frame_size, total_jobs, entries) != 0)
 			{
-				fprintf(stderr, "write_periodic_schedule() failed\n");
+				fprintf(stderr, "schedule_periodic_tasks(): write_periodic_schedule() failed\n");
 				PTaskArray_delete(array);
 				return -1;
 			}

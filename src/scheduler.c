@@ -10,7 +10,16 @@
 
 #ifdef RAND_EXEC_TIME
 #include <time.h>
+
+static inline double rand_20_to_100(double val)
+{
+	return TO_SCHEDULER_PRECISION((1 - (double) rand() / RAND_MAX * 0.8) * val);
+}
 #endif /* RAND_EXEC_TIME */
+
+
+#define DEFAULT_FRAME_SIZE 1
+#define DEFAULT_FRAME_COUNT 1
 
 
 struct Scheduler
@@ -46,9 +55,22 @@ SchedulerPtr Scheduler_new(void)
 	return scheduler;
 }
 
-// tbc
+
 void Scheduler_delete(SchedulerPtr scheduler)
 {
+	for(size_t i = 0; i < scheduler->frame_count; i++)
+	{
+		PSliceArray_delete(scheduler->pslice_arrays[i]);
+	}
+	free(scheduler->pslice_arrays);
+	free(scheduler->slacks);
+
+	AJobQueue_delete(scheduler->ajobs_all);
+	AJobQueue_delete(scheduler->ajobs_queue);
+
+	SJobQueue_delete(scheduler->sjobs_all);
+	SJobPriQueue_delete(scheduler->sjobs_accepted);
+
 	free(scheduler);
 }
 
@@ -64,17 +86,56 @@ int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_na
 
 	fscanf(file, "%lu %lu\n", &scheduler->frame_size, &scheduler->frame_count);
 
+	if(scheduler->frame_count == 0)
+	{
+		scheduler->frame_count = DEFAULT_FRAME_COUNT;
+		scheduler->frame_size = DEFAULT_FRAME_SIZE;
+		scheduler->pslice_arrays = malloc(sizeof(PSliceArrayPtr));
+		if(!scheduler->pslice_arrays)
+		{
+			perror("Scheduler_load_periodic_schedule(): scheduler->pslice_arrays malloc() failed");
+			fclose(file);
+			return -1;
+		}
+
+		scheduler->pslice_arrays[0] = PSliceArray_new(0);
+		if(!scheduler->pslice_arrays[0])
+		{
+			perror("Scheduler_load_periodic_schedule(): PSliceArray_new() failed");
+			fclose(file);
+			free(scheduler->pslice_arrays);
+			return -1;
+		}
+
+		scheduler->slacks = malloc(sizeof(double));
+		if(!scheduler->slacks)
+		{
+			perror("Scheduler_load_periodic_schedule(): scheduler->slacks malloc() failed");
+			fclose(file);
+			PSliceArray_delete(scheduler->pslice_arrays[0]);
+			free(scheduler->pslice_arrays);
+			return -1;
+		}
+
+		scheduler->slacks[0] = DEFAULT_FRAME_SIZE;
+		fclose(file);
+		return 0;
+	}
+
 	scheduler->pslice_arrays = malloc(scheduler->frame_count * sizeof(PSliceArrayPtr));
 	if(!scheduler->pslice_arrays)
 	{
-		perror("Scheduler_load_periodic_schedule(): scheduler->pslice_arrays allocation failed");
+		perror("Scheduler_load_periodic_schedule(): scheduler->pslice_arrays malloc() failed");
+		fclose(file);
 		return -1;
 	}
 
 	scheduler->slacks = malloc(scheduler->frame_count * sizeof(double));
 	if(!scheduler->slacks)
 	{
-		perror("Scheduler_load_periodic_schedule(): scheduler->slacks allocation failed");
+		perror("Scheduler_load_periodic_schedule(): scheduler->slacks malloc() failed");
+		fclose(file);
+		free(scheduler->pslice_arrays);
 		return -1;
 	}
 
@@ -86,7 +147,10 @@ int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_na
 		scheduler->pslice_arrays[i] = PSliceArray_new(slice_count);
 		if(!scheduler->pslice_arrays[i])
 		{
-			perror("Scheduler_load_periodic_schedule(): PSliceArray allocation failed");
+			perror("Scheduler_load_periodic_schedule(): PSliceArray_new() failed");
+			fclose(file);
+			free(scheduler->pslice_arrays);
+			free(scheduler->slacks);
 			return -1;
 		}
 
@@ -97,7 +161,17 @@ int Scheduler_load_periodic_schedule(SchedulerPtr scheduler, const char *file_na
 			double slice_time;
 			fscanf(file, "%d,%d,%lg ", &task, &job, &slice_time);
 
-			PSliceArray_set(scheduler->pslice_arrays[i], j, PSlice_new(task, job, slice_time));
+			PSlicePtr pslice = PSlice_new(task, job, slice_time);
+			if(!pslice)
+			{
+				perror("Scheduler_load_periodic_schedule(): PSlice_new() failed");
+				fclose(file);
+				free(scheduler->pslice_arrays);
+				free(scheduler->slacks);
+				return -1;
+			}
+
+			PSliceArray_set(scheduler->pslice_arrays[i], j, pslice);
 			slack -= slice_time;
 		}
 		fscanf(file, "\n");
@@ -117,8 +191,22 @@ int Scheduler_load_aperiodic_schedule(SchedulerPtr scheduler, const char *file_n
 		return -1;
 	}
 
-	scheduler->ajobs_all = AJobQueue_new(); // check null
-	scheduler->ajobs_queue = AJobQueue_new(); // check null
+	scheduler->ajobs_all = AJobQueue_new();
+	if(!scheduler->ajobs_all)
+	{
+		perror("Scheduler_load_aperiodic_schedule(): scheduler->ajobs_all AJobQueue_new() failed");
+		fclose(file);
+		return -1;
+	}
+
+	scheduler->ajobs_queue = AJobQueue_new();
+	if(!scheduler->ajobs_queue)
+	{
+		perror("Scheduler_load_aperiodic_schedule(): scheduler->ajobs_queue AJobQueue_new() failed");
+		AJobQueue_delete(scheduler->ajobs_all);
+		fclose(file);
+		return -1;
+	}
 
 	int job_count;
 	fscanf(file, "%d\n", &job_count);
@@ -144,7 +232,21 @@ int Scheduler_load_sporadic_schedule(SchedulerPtr scheduler, const char *file_na
 	}
 
 	scheduler->sjobs_all = SJobQueue_new(); // check null
+	if(!scheduler->sjobs_all)
+	{
+		perror("Scheduler_load_sporadic_schedule(): SJobQueue_new() failed");
+		fclose(file);
+		return -1;
+	}
+
 	scheduler->sjobs_accepted = SJobPriQueue_new(); // check null
+	if(!scheduler->sjobs_accepted)
+	{
+		perror("Scheduler_load_sporadic_schedule(): SJobPriQueue_new() failed");
+		SJobQueue_delete(scheduler->sjobs_all);
+		fclose(file);
+		return -1;
+	}
 
 	int job_no = 0;
 	int job_count;
@@ -171,6 +273,10 @@ static void Scheduler_update_aperiodic_queue(SchedulerPtr scheduler)
 		AJobQueue_peek(scheduler->ajobs_all, &release_time, &exec_time);
 		if(cur_time >= release_time)
 		{
+			#ifdef RAND_EXEC_TIME
+			exec_time = rand_20_to_100(exec_time);
+			#endif /* RAND_EXEC_TIME */
+
 			AJobQueue_enqueue(scheduler->ajobs_queue, release_time, exec_time);
 			AJobQueue_dequeue(scheduler->ajobs_all);
 		}
@@ -195,7 +301,12 @@ static void Scheduler_update_sporadic_queue(SchedulerPtr scheduler)
 				total_slack += scheduler->slacks[frame % scheduler->frame_count];
 			}
 
-			SJobPriQueue_try_enqueue(scheduler->sjobs_accepted, job, total_slack);
+			if(SJobPriQueue_try_enqueue(scheduler->sjobs_accepted, job, total_slack))
+			{	
+				#ifdef RAND_EXEC_TIME
+				SJob_set_exec_time(job, rand_20_to_100(SJob_exec_time(job)));
+				#endif /* RAND_EXEC_TIME */
+			}
 			SJobQueue_dequeue(scheduler->sjobs_all);
 		}
 		else
@@ -255,14 +366,6 @@ static void Scheduler_execute_sporadic_jobs(SchedulerPtr scheduler, SchedulePtr 
 }
 
 
-#ifdef RAND_EXEC_TIME
-static inline double rand_20_to_100(double val)
-{
-	return ((double) (long) ((1 - (double) rand() / RAND_MAX * 0.8) * val * SCHEDULER_TIMESTEP_PRECISION)) * SCHEDULER_MINIMUM_TIMESTEP;
-}
-#endif /* RAND_EXEC_TIME */
-
-
 void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 {
 	#ifdef RAND_EXEC_TIME
@@ -274,10 +377,12 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 	scheduler->time = 0;
 	scheduler->current_frame = 0;
 	scheduler->frame_progress = 0;
-	scheduler->slack_left = scheduler->slacks[0];
 
-	PSliceArrayPtr pslices = scheduler->pslice_arrays[0];
-	size_t pslice_index = 0, pslice_count = PSliceArray_size(pslices);
+	PSliceArrayPtr pslices;
+	size_t pslice_index = 0, pslice_count = 0;
+	scheduler->slack_left = scheduler->slacks[0];
+	pslices = scheduler->pslice_arrays[0];
+	pslice_count = PSliceArray_size(pslices);
 
 	Schedule_set_frame_size(schedule, scheduler->frame_size);
 
@@ -327,8 +432,6 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 		{
 			Scheduler_execute_sporadic_jobs(scheduler, schedule);
 			continue;
-			/*Scheduler_update_aperiodic_queue(scheduler);
-			Scheduler_execute_aperiodic_jobs(scheduler, schedule);*/
 		}
 
 		// If no more jobs to do and slack left, idle and wait for new aperiodic jobs, if any.
@@ -361,13 +464,12 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 		scheduler->current_frame = scheduler->time % scheduler->frame_count;
 		scheduler->frame_progress = 0;
 		scheduler->slack_left = scheduler->slacks[scheduler->current_frame];
-
 		pslices = scheduler->pslice_arrays[scheduler->current_frame];
 		pslice_index = 0;
 		pslice_count = PSliceArray_size(pslices);
 
 
-		// Stop writing to schedule structure because only periodic jobs left now.
+		// Stop writing to schedule structure if only periodic jobs (or no jobs) are left now.
 		if(scheduler->current_frame == 0 && DOUBLE_EQ(scheduler->frame_progress, 0) && 
 			AJobQueue_is_empty(scheduler->ajobs_all) && AJobQueue_is_empty(scheduler->ajobs_queue) &&
 			SJobQueue_is_empty(scheduler->sjobs_all) && SJobPriQueue_is_empty(scheduler->sjobs_accepted))
