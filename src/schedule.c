@@ -124,15 +124,15 @@ void Schedule_fprint(SchedulePtr schedule, FILE *stream)
 
 		if(type == JOB_TYPE_PERIODIC)
 		{
-			fprintf(stream, "%3g %9s %d:%d\n", time_since_start, JobType_str(type), task, job);
+			fprintf(stream, "%10lg %10s\t%d:%d\n", time_since_start, JobType_str(type), task, job);
 		}
 		else if(type == JOB_TYPE_IDLE)
 		{
-			fprintf(stream, "%3g %9s\n", time_since_start, JobType_str(type));
+			fprintf(stream, "%10lg %10s\n", time_since_start, JobType_str(type));
 		}
 		else
 		{
-			fprintf(stream, "%3g %9s %d\n", time_since_start, JobType_str(type), job);
+			fprintf(stream, "%10lg %10s\t%d\n", time_since_start, JobType_str(type), job);
 		}
 
 		time_since_start += time;

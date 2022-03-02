@@ -12,6 +12,9 @@ enum JobType
 	JOB_TYPE_IDLE
 };
 
+#define SCHEDULER_TIMESTEP_PRECISION 100
+#define SCHEDULER_MINIMUM_TIMESTEP (1.0 / SCHEDULER_TIMESTEP_PRECISION)
+
 typedef struct Scheduler *SchedulerPtr;
 typedef struct Schedule *SchedulePtr;
 

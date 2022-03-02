@@ -3,20 +3,24 @@
 #include "pslice.h"
 #include "sjob.h"
 #include "sjob_queue.h"
+#include "common.h"
+#include <bits/types/time_t.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef RAND_EXEC_TIME
+#include <time.h>
+#endif /* RAND_EXEC_TIME */
+
 
 struct Scheduler
 {
 	// General
-
-	// Each time step moves forward time by one frame.
-	unsigned long time;
+	unsigned long time; // Each time step moves forward time by one frame.
 	unsigned long current_frame;
 	double frame_progress, slack_left;
 
 	// Periodic jobs
-
 	size_t frame_size, frame_count;
 	PSliceArrayPtr *pslice_arrays;
 	double *slacks;
@@ -116,11 +120,14 @@ int Scheduler_load_aperiodic_schedule(SchedulerPtr scheduler, const char *file_n
 	scheduler->ajobs_all = AJobQueue_new(); // check null
 	scheduler->ajobs_queue = AJobQueue_new(); // check null
 
-	while(!feof(file))
+	int job_count;
+	fscanf(file, "%d\n", &job_count);
+	while(job_count > 0 && !feof(file))
 	{
 		double release_time, exec_time;
 		fscanf(file, "%lg %lg\n", &release_time, &exec_time);
 		AJobQueue_enqueue(scheduler->ajobs_all, release_time, exec_time);
+		job_count -= 1;
 	}
 
 	return 0;
@@ -140,12 +147,15 @@ int Scheduler_load_sporadic_schedule(SchedulerPtr scheduler, const char *file_na
 	scheduler->sjobs_accepted = SJobPriQueue_new(); // check null
 
 	int job_no = 0;
-	while(!feof(file))
+	int job_count;
+	fscanf(file, "%d\n", &job_count);
+	while(job_count > 0 && !feof(file))
 	{
 		double arrival, exec_time, abs_deadline;
 		fscanf(file, "%lg %lg %lg\n", &arrival, &exec_time, &abs_deadline);
 		SJobQueue_enqueue(scheduler->sjobs_all, SJob_new(job_no, arrival, exec_time, abs_deadline));
 		job_no += 1;
+		job_count -= 1;
 	}
 
 	return 0;
@@ -180,7 +190,7 @@ static void Scheduler_update_sporadic_queue(SchedulerPtr scheduler)
 		if(cur_time >= SJob_arrival(job))
 		{
 			double total_slack = 0;
-			for(size_t frame = scheduler->current_frame; frame < SJob_abs_deadline(job) / scheduler->frame_size; frame++)
+			for(size_t frame = scheduler->current_frame; frame < (size_t) (SJob_abs_deadline(job) / scheduler->frame_size); frame++)
 			{
 				total_slack += scheduler->slacks[frame % scheduler->frame_count];
 			}
@@ -245,26 +255,42 @@ static void Scheduler_execute_sporadic_jobs(SchedulerPtr scheduler, SchedulePtr 
 }
 
 
+#ifdef RAND_EXEC_TIME
+static inline double rand_20_to_100(double val)
+{
+	return ((double) (long) ((1 - (double) rand() / RAND_MAX * 0.8) * val * SCHEDULER_TIMESTEP_PRECISION)) * SCHEDULER_MINIMUM_TIMESTEP;
+}
+#endif /* RAND_EXEC_TIME */
+
+
 void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 {
+	#ifdef RAND_EXEC_TIME
+	// Initialise random number generator with current time as seed.
+	srand((unsigned) time(NULL));
+	#endif /* RAND_EXEC_TIME */
+
+
 	scheduler->time = 0;
 	scheduler->current_frame = 0;
 	scheduler->frame_progress = 0;
 	scheduler->slack_left = scheduler->slacks[0];
 
+	PSliceArrayPtr pslices = scheduler->pslice_arrays[0];
+	size_t pslice_index = 0, pslice_count = PSliceArray_size(pslices);
+
 	Schedule_set_frame_size(schedule, scheduler->frame_size);
 
-	int n = 5;
-	while(n--)
+	while(1)
 	{
 		// Assume each iteration is a timer interrupt.
 		// Assume no frame overruns and no jitter.
 
-		// TODO: Run acceptance tests on sporadic job queue to accept them.
-		Scheduler_update_sporadic_queue(scheduler);
-
-		PSliceArrayPtr pslices = scheduler->pslice_arrays[scheduler->current_frame];
-		size_t pslice_index = 0, pslice_count = PSliceArray_size(pslices);
+		// Run acceptance tests on sporadic job queue to accept them.
+		if(DOUBLE_EQ(scheduler->frame_progress, 0))
+		{
+			Scheduler_update_sporadic_queue(scheduler);
+		}		
 
 		while(1)
 		{
@@ -285,24 +311,49 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 
 			// Execute 1 periodic job slice.
 			PSlicePtr pslice = PSliceArray_get(pslices, pslice_index);
-			Schedule_add_entry(schedule, PSlice_slice_time(pslice), JOB_TYPE_PERIODIC, PSlice_job(pslice), PSlice_task(pslice));
-			scheduler->frame_progress += PSlice_slice_time(pslice);
+			double slice_time = PSlice_slice_time(pslice);
+
+			#ifdef RAND_EXEC_TIME
+			slice_time = rand_20_to_100(slice_time);
+			#endif /* RAND_EXEC_TIME */
+
+			Schedule_add_entry(schedule, slice_time, JOB_TYPE_PERIODIC, PSlice_job(pslice), PSlice_task(pslice));
+			scheduler->frame_progress += slice_time;
 			pslice_index++;
 		}
 
-		// TODO: If accepted sporadic jobs, execute until queue empty or no slack.
+		// If accepted sporadic jobs, execute until queue empty or no slack.
 		if(!SJobPriQueue_is_empty(scheduler->sjobs_accepted) && scheduler->slack_left > 0)
 		{
 			Scheduler_execute_sporadic_jobs(scheduler, schedule);
-			Scheduler_update_aperiodic_queue(scheduler);
-			Scheduler_execute_aperiodic_jobs(scheduler, schedule);
+			continue;
+			/*Scheduler_update_aperiodic_queue(scheduler);
+			Scheduler_execute_aperiodic_jobs(scheduler, schedule);*/
 		}
 
-		// If no more jobs to do and slack left, idle.
+		// If no more jobs to do and slack left, idle and wait for new aperiodic jobs, if any.
 		if(scheduler->frame_progress < scheduler->frame_size)
 		{
-			Schedule_add_entry(schedule, scheduler->frame_size - scheduler->frame_progress, 
-				JOB_TYPE_IDLE, 0, 0);
+			long idle_start = (long) (scheduler->frame_progress * SCHEDULER_TIMESTEP_PRECISION);
+			long idle_timestep = idle_start;
+			long frame_end = (long) (scheduler->frame_size * SCHEDULER_TIMESTEP_PRECISION);
+			for( ; idle_timestep < frame_end; idle_timestep++)
+			{
+				scheduler->frame_progress = (double) idle_timestep * SCHEDULER_MINIMUM_TIMESTEP;
+				Scheduler_update_aperiodic_queue(scheduler);
+				if(!AJobQueue_is_empty(scheduler->ajobs_queue))
+				{
+					break;
+				}
+			}
+			scheduler->frame_progress = (double) idle_timestep * SCHEDULER_MINIMUM_TIMESTEP;
+
+			Schedule_add_entry(schedule, scheduler->frame_progress - idle_start * SCHEDULER_MINIMUM_TIMESTEP, JOB_TYPE_IDLE, 0, 0);
+
+			if(!DOUBLE_EQ(scheduler->frame_progress, scheduler->frame_size))
+			{
+				continue;
+			}
 		}
 
 		// Update scheduler state.
@@ -310,5 +361,18 @@ void Scheduler_cyclic_executive(SchedulerPtr scheduler, SchedulePtr schedule)
 		scheduler->current_frame = scheduler->time % scheduler->frame_count;
 		scheduler->frame_progress = 0;
 		scheduler->slack_left = scheduler->slacks[scheduler->current_frame];
+
+		pslices = scheduler->pslice_arrays[scheduler->current_frame];
+		pslice_index = 0;
+		pslice_count = PSliceArray_size(pslices);
+
+
+		// Stop writing to schedule structure because only periodic jobs left now.
+		if(scheduler->current_frame == 0 && DOUBLE_EQ(scheduler->frame_progress, 0) && 
+			AJobQueue_is_empty(scheduler->ajobs_all) && AJobQueue_is_empty(scheduler->ajobs_queue) &&
+			SJobQueue_is_empty(scheduler->sjobs_all) && SJobPriQueue_is_empty(scheduler->sjobs_accepted))
+		{
+			break;
+		}
 	}
 }

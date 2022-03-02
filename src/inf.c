@@ -1,9 +1,9 @@
 #include "inf.h"
+#include "common.h"
 #include "ptask.h"
 #include "queue.h"
 #include <string.h>
 #include <float.h>
-
 #include <stdio.h>
 
 struct INFInfo
@@ -30,7 +30,7 @@ static void print_graph(size_t vertex_count, double graph[vertex_count][vertex_c
 		printf("%2lu  ", i);
 		for(size_t j = 0; j < vertex_count; j++)
 		{
-			printf("%2.1g ", graph[i][j]);
+			printf("%2g ", graph[i][j]);
 		}
 		printf("\n");
 	}
@@ -83,7 +83,7 @@ static void initialise_graph(size_t vertex_count, double graph[vertex_count][ver
 
 static double edmonds_karp(size_t vertex_count, double capacity_graph[vertex_count][vertex_count], double flow_graph[vertex_count][vertex_count])
 {
-	int flow = 0;
+	double flow = 0;
 	while(1)
 	{
 		int from[vertex_count];
@@ -106,7 +106,7 @@ static double edmonds_karp(size_t vertex_count, double capacity_graph[vertex_cou
 			int u = QueueInt_dequeue(queue);
 			for(size_t v = 0; v < vertex_count; v++)
 			{
-				if(capacity_graph[u][v] != 0 && from[v] == -1 && 
+				if(!DOUBLE_EQ(capacity_graph[u][v], 0) && from[v] == -1 &&
 					v != 0 && capacity_graph[u][v] > flow_graph[u][v])
 				{
 					from[v] = u;
@@ -186,7 +186,7 @@ int inf_algorithm(PTaskArrayPtr array, int frame_size, int frame_count, size_t t
 	double flow_graph[vertex_count][vertex_count];
 	memset(flow_graph, 0, sizeof(flow_graph));
 
-	if(edmonds_karp(vertex_count, capacity_graph, flow_graph) != total_execution_time)
+	if(!DOUBLE_EQ(edmonds_karp(vertex_count, capacity_graph, flow_graph), total_execution_time))
 	{
 		return -1;
 	}
